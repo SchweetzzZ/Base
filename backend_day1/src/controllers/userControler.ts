@@ -1,31 +1,60 @@
 import { createUsers, login } from "../auth/auth";
 
-//rota de registro
-export const registerUser = async (context: any) => {
-    const {nome,email,senha,nascimento} = context.body
-    //tratar
-    if (!nome || !email || !senha || !nascimento) 
-        return { status: (400), body: {mensagem: "Todos os campos são obrigatorios"}
+export const registerUser = async ({ body, set }: { body: any; set: any }) => {
+  console.log("🔹 registerUser chamado");
+  console.log("Request body:", body);
+
+  const { nome, email, senha, nascimento } = body;
+  if (!nome || !email || !senha || !nascimento) {
+    set.status = 400;
+    return { mensagem: "Todos os campos são obrigatórios" };
+  }
+
+  try {
+    const newUser = await createUsers(nome, email, senha, nascimento);
+    if (!newUser) {
+      set.status = 400;
+      return { mensagem: "Erro ao criar o usuário" };
     }
-    //criar o usuario
-    const user = await createUsers(nome,email,senha,nascimento)
-    //trato
-    if (!user){
-        return {status: (400), body: {mensagem: "Erro ao criar o usuario"}}
-    }
-    return {status: (201), body: {mensagem: "Usuario criado com sucesso"}}
-}
+
+    set.status = 201;
+    return { mensagem: "Usuário criado com sucesso", user: { id: newUser.id, nome: newUser.nome, email: newUser.email } };
+  } catch (err: any) {
+    console.error("❌ Erro em registerUser:", err.message);
     
-//rota de login
-export const loginUser = async (context: any) => {
-    const {email,senha} = context.body
-    if (!email || !senha){
-        return {status: (400), body: {mensagem: "Todos os campos são obrigatorios"}}
+    if (err.message.includes("duplicate key")) {
+      set.status = 409;
+      return { mensagem: "Email já cadastrado" };
     }
-    const response = await login(email,senha)
+    
+    set.status = 500;
+    return { mensagem: "Erro interno no servidor" };
+  }
+};
+
+export const loginUser = async ({ body, set }: { body: any; set: any }) => {
+  console.log("🔹 loginUser chamado");
+  console.log("Request body:", body);
+
+  const { email, senha } = body;
+  if (!email || !senha) {
+    set.status = 400;
+    return { mensagem: "Todos os campos são obrigatórios" };
+  }
+
+  try {
+    const response = await login(email, senha);
+
     if ("mensagem" in response) {
-        return { status: 400, body: response };
-      }
-    
-      return { body: response };
-    };
+      set.status = 401;
+      return response;
+    }
+
+    set.status = 200;
+    return response;
+  } catch (err: any) {
+    console.error("❌ Erro em loginUser:", err.message);
+    set.status = 500;
+    return { mensagem: "Erro interno no servidor" };
+  }
+};

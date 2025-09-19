@@ -1,14 +1,15 @@
-import { registerUser, loginUser } from "../controllers/userControler";
 import { Elysia } from "elysia";
-import type { AuthMiddleware } from "better-auth/api";
+import { registerUser, loginUser } from "../controllers/userControler";
+import { authMiddleware } from "../middleware/authMiddleware";
 
-export const userRoutes = (app:Elysia) => {
-    app.post("/register", registerUser)
-    app.post("/login", loginUser)
-}
-/*Exemplo de rota protegida
-app.get("/me", { preHandler: authMiddleware }, (context) => {
-    // @ts-ignore
-    return { user: context.user }; // middleware adiciona context.user
-  });
-*/
+export const userRoutes = (app: Elysia) => {
+  return app
+    .post("/register", registerUser)
+    .post("/login", loginUser)
+    .get("/me", async (context: any) => {
+      const authResult = await authMiddleware(context);
+      if (authResult) return authResult;
+
+      return { user: context.user };
+    });
+};

@@ -1,14 +1,12 @@
-import {pgTable, serial, text, varchar, date} from 'drizzle-orm/pg-core'
-import { nodeModuleNameResolver } from 'typescript'
+import { pgTable, serial, varchar, date } from 'drizzle-orm/pg-core';
 
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  nome: varchar("nome", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  senha: varchar("senha", { length: 255 }).notNull(),
+  nascimento: date("nascimento").notNull()
+});
 
-//criar a contante que possue as tabelas(chamando o pg table)
-export const users = pgTable("users",{
-    id: serial("id").primaryKey().notNull(),
-    nome: varchar("nome").notNull(),
-    email: varchar("email").notNull(),
-    senha: varchar("senha").notNull(),
-    //tinha esquecido de importar o date
-    nascimento: date("nascimento").notNull()
-}
-)
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
